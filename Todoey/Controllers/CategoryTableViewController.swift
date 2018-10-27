@@ -8,8 +8,9 @@
 
 import UIKit
 import RealmSwift
+import ChameleonFramework
 
-class CategoryTableViewController: UITableViewController {
+class CategoryTableViewController: SwipeTableViewController {
     
     var categories: Results<Category>?
     let realm = try! Realm()
@@ -18,6 +19,9 @@ class CategoryTableViewController: UITableViewController {
         super.viewDidLoad()
 
         loadCategories()
+        
+        tableView.separatorStyle = .none
+        
     }
     
     
@@ -28,9 +32,14 @@ class CategoryTableViewController: UITableViewController {
     
     override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         
-        let cell = tableView.dequeueReusableCell(withIdentifier: "CategoryCell", for: indexPath)
-        
-        cell.textLabel?.text = categories?[indexPath.row].name ?? "No Category Added Yet"
+        let cell = super.tableView(tableView,cellForRowAt: indexPath)
+        if let category = categories?[indexPath.row] {
+            cell.textLabel?.text = category.name
+            guard let categoryColor = UIColor(hexString: category.color) else {fatalError()}
+            
+            cell.backgroundColor = categoryColor
+            cell.textLabel?.textColor = ContrastColorOf(categoryColor, returnFlat: true)
+        }
         
         return cell
     }
@@ -61,6 +70,7 @@ class CategoryTableViewController: UITableViewController {
        
             let newCategory = Category()
             newCategory.name = TextField.text!
+            newCategory.color = UIColor.randomFlat.hexValue()
             
             self.save(category: newCategory)
         }
@@ -73,9 +83,6 @@ class CategoryTableViewController: UITableViewController {
         alert.addAction(action)
         
         present(alert, animated: true, completion: nil)
-        
-        
-        
         
     }
     //MARK: - Data Manipulation Methods
@@ -98,4 +105,24 @@ class CategoryTableViewController: UITableViewController {
     
         tableView.reloadData()
     }
+    
+    override func updateModel(at IndexPath: IndexPath) {
+        if let categoryForDeletion = self.categories?[IndexPath.row] {
+            do {
+                try self.realm.write {
+                    self.realm.delete(categoryForDeletion)
+                }
+            } catch {
+                print("Error deleting category, \(error)")
+            }
+        }
+        
+    }
+    
+    
+    
+    
+    
+    
+    
 }
